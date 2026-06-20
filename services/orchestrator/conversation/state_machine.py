@@ -168,15 +168,9 @@ async def process_message(state: ConversationState, request: ChatRequest) -> tup
             except Exception as exc:
                 logger.error("Failed to create ticket: %s", exc)
                 reply = "I encountered an error submitting the ticket. Please try again or contact IT directly."
-        elif _user_cancelled(user_text):
-            state.stage = ConversationStage.COLLECT_FIELDS
-            state.missing_fields = list(REQUIRED_FIELDS[state.ticket_type])
-            reply = "No problem — what would you like to change?"
         else:
             extracted = await _extract_fields(user_text, state.ticket_type, list(REQUIRED_FIELDS[state.ticket_type]))
             _apply_extracted(state, extracted, replace=True)
-            if not state.missing_fields:
-                state.stage = ConversationStage.CONFIRM
 
     if not reply:
         if state.stage == ConversationStage.COLLECT_FIELDS and state.missing_fields:
@@ -216,8 +210,8 @@ def _user_confirmed(text: str) -> bool:
 
 
 def _user_cancelled(text: str) -> bool:
-    t = text.strip().lower()
-    return any(w in t for w in ("no", "cancel", "change", "wrong", "edit", "update"))
+    words = set(text.strip().lower().split())
+    return bool(words & {"no", "cancel", "wrong", "edit", "update", "change"})
 
 
 async def _fetch_similar_suggestion(description: str) -> Optional[str]:

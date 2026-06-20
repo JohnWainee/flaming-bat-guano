@@ -56,6 +56,10 @@ class TestUserIntent:
     def test_cancelled(self, text):
         assert _user_cancelled(text)
 
+    @pytest.mark.parametrize("text", ["not working", "nothing helps", "notable issue"])
+    def test_not_cancelled_by_substring(self, text):
+        assert not _user_cancelled(text)
+
 
 class TestRequiredFields:
     def test_incident_has_core_fields(self):

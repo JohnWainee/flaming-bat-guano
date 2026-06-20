@@ -63,7 +63,7 @@ async def messages(request: web.Request) -> web.Response:
         if activity.type == "message":
             await adapter.process_activity(activity, auth_header, handle_message)
         else:
-            await adapter.process_activity(activity, auth_header, lambda ctx: None)
+            await adapter.process_activity(activity, auth_header, _noop)
     except Exception as exc:
         logger.error("Error processing activity: %s", exc, exc_info=True)
         return web.Response(status=HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -71,9 +71,17 @@ async def messages(request: web.Request) -> web.Response:
     return web.Response(status=HTTPStatus.OK)
 
 
+async def _noop(_ctx: TurnContext) -> None:
+    pass
+
+
+async def _health(_request: web.Request) -> web.Response:
+    return web.json_response({"status": "ok"})
+
+
 app = web.Application()
 app.router.add_post("/api/messages", messages)
-app.router.add_get("/health", lambda _: web.json_response({"status": "ok"}))
+app.router.add_get("/health", _health)
 
 if __name__ == "__main__":
     web.run_app(app, host="0.0.0.0", port=3978)

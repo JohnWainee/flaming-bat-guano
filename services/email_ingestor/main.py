@@ -5,6 +5,7 @@ import email
 import imaplib
 import logging
 from email.header import decode_header
+from email.utils import parseaddr
 from typing import Optional
 
 import httpx
@@ -42,9 +43,9 @@ def _extract_body(msg: email.message.Message) -> str:
     return body.strip()
 
 
-async def _submit_to_orchestrator(from_addr: str, subject: str, body: str, message_id: str) -> Optional[str]:
-    async with httpx.AsyncClient(timeout=60) as client:
-        resp = await client.post(
+def _submit_to_orchestrator_sync(from_addr: str, subject: str, body: str, message_id: str) -> Optional[str]:
+    with httpx.Client(timeout=60) as client:
+        resp = client.post(
             f"{settings.orchestrator_url}/email",
             json={
                 "from_address": from_addr,
@@ -54,8 +55,7 @@ async def _submit_to_orchestrator(from_addr: str, subject: str, body: str, messa
             },
         )
         resp.raise_for_status()
-        data = resp.json()
-        return data.get("ticket_number")
+        return resp.json().get("ticket_number")
 
 
 def _send_reply(conn: imaplib.IMAP4_SSL, to_addr: str, subject: str, ticket_number: Optional[str]) -> None:
@@ -113,12 +113,12 @@ def _process_imap() -> None:
                 continue
 
             msg = email.message_from_bytes(raw)
-            from_addr = msg.get("From", "")
+            from_addr = parseaddr(msg.get("From", ""))[1]
             subject = _decode_header_value(msg.get("Subject", "(no subject)"))
             message_id = msg.get("Message-ID", str(num))
             body = _extract_body(msg)
 
-            ticket_number = asyncio.run(_submit_to_orchestrator(from_addr, subject, body, message_id))
+            ticket_number = _submit_to_orchestrator_sync(from_addr, subject, body, message_id)
             _send_reply(conn, from_addr, subject, ticket_number)
 
             # Move to processed folder
@@ -133,9 +133,10 @@ def _process_imap() -> None:
 
 
 async def poll_forever() -> None:
+    loop = asyncio.get_event_loop()
     while True:
         try:
-            _process_imap()
+            await loop.run_in_executor(None, _process_imap)
         except Exception as exc:
             logger.error("IMAP poll error: %s", exc, exc_info=True)
         await asyncio.sleep(settings.email_poll_interval_seconds)

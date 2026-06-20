@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import json
-from typing import Any, Dict, List, Optional
+from typing import Dict
 
 import plotly.express as px
 import streamlit as st
@@ -12,8 +11,8 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from services.orchestrator.llm.client import chat_complete, embed_single
-from services.orchestrator.vector.client import vector_client, _COLLECTIONS
+from services.orchestrator.llm.client import chat_complete
+from services.orchestrator.vector.client import vector_client
 from shared.models import TicketType
 
 st.set_page_config(page_title="ServiceNow Analyst", layout="wide", page_icon="🎫")

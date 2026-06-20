@@ -32,6 +32,8 @@ async def health() -> dict:
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest) -> ChatResponse:
     state = await state_store.load_state(request.conversation_id)
+    if state is not None and state.user_id != request.user_id:
+        state = None
     if state is None:
         state = ConversationState(
             conversation_id=request.conversation_id,

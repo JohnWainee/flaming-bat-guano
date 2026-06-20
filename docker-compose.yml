@@ -60,6 +60,20 @@ services:
       - orchestrator
     restart: unless-stopped
 
+  ingestion-pipeline:
+    build:
+      context: .
+      dockerfile: services/ingestion_pipeline/Dockerfile
+    <<: *common-env
+    environment:
+      QDRANT_URL: http://qdrant:6333
+    depends_on:
+      - qdrant
+      - orchestrator
+    restart: "no"
+    volumes:
+      - ingestion_cursor:/data
+
   dashboard:
     build:
       context: .
@@ -77,3 +91,4 @@ services:
 volumes:
   qdrant_data:
   redis_data:
+  ingestion_cursor:
