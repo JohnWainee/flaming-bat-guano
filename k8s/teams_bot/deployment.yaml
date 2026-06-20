@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: teams-bot
+  labels:
+    app: teams-bot
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: teams-bot
+  template:
+    metadata:
+      labels:
+        app: teams-bot
+    spec:
+      containers:
+        - name: teams-bot
+          image: your-registry/snow-teams-bot:latest
+          ports:
+            - containerPort: 3978
+          envFrom:
+            - secretRef:
+                name: snow-assistant-secrets
+          env:
+            - name: ORCHESTRATOR_URL
+              value: "http://orchestrator:8000"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3978
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: teams-bot
+spec:
+  selector:
+    app: teams-bot
+  ports:
+    - port: 3978
+      targetPort: 3978
+  type: LoadBalancer

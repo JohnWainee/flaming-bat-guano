@@ -1,0 +1,80 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: snow-ingestion
+spec:
+  schedule: "0 2 * * *"  # 2am nightly
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: ingestion
+              image: your-registry/snow-ingestion:latest
+              envFrom:
+                - secretRef:
+                    name: snow-assistant-secrets
+              env:
+                - name: QDRANT_URL
+                  value: "http://qdrant:6333"
+              volumeMounts:
+                - name: cursor-storage
+                  mountPath: /data
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "500m"
+                limits:
+                  memory: "1Gi"
+                  cpu: "2"
+          volumes:
+            - name: cursor-storage
+              persistentVolumeClaim:
+                claimName: ingestion-cursor-pvc
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: snow-ingestion-initial
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: ingestion
+          image: your-registry/snow-ingestion:latest
+          envFrom:
+            - secretRef:
+                name: snow-assistant-secrets
+          env:
+            - name: QDRANT_URL
+              value: "http://qdrant:6333"
+          volumeMounts:
+            - name: cursor-storage
+              mountPath: /data
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "1"
+            limits:
+              memory: "2Gi"
+              cpu: "2"
+      volumes:
+        - name: cursor-storage
+          persistentVolumeClaim:
+            claimName: ingestion-cursor-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ingestion-cursor-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
