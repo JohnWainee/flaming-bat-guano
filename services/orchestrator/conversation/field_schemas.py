@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Dict, List
+from datetime import datetime
+from typing import Any, Dict, List
 
 from shared.models import TicketType
 
@@ -58,8 +59,45 @@ KNOWN_ERROR_MAP = {
     "yes": True, "y": True, "true": True, "no": False, "n": False, "false": False,
 }
 
+# Date/datetime fields that ServiceNow expects in "YYYY-MM-DD HH:MM:SS" form.
+DATE_FIELDS = {"start_date", "end_date"}
 
-def normalize_field(field_name: str, value: str) -> str | bool:
+# Input formats we accept from users before converting to the SNOW datetime format.
+_DATE_INPUT_FORMATS = (
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d %H:%M",
+    "%Y-%m-%dT%H:%M:%S",
+    "%Y-%m-%dT%H:%M",
+    "%Y-%m-%d",
+    "%m/%d/%Y %H:%M",
+    "%m/%d/%Y",
+    "%d/%m/%Y",
+    "%B %d, %Y",
+    "%b %d, %Y",
+    "%B %d %Y",
+    "%b %d %Y",
+)
+
+_SNOW_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+def normalize_date(value: str) -> str:
+    """Convert a user-supplied date into ServiceNow's 'YYYY-MM-DD HH:MM:SS' format.
+
+    Returns the original string unchanged if it can't be parsed, so the user's
+    intent is never silently dropped — downstream validation/SNOW can surface it.
+    """
+    raw = str(value).strip()
+    for fmt in _DATE_INPUT_FORMATS:
+        try:
+            parsed = datetime.strptime(raw, fmt)
+            return parsed.strftime(_SNOW_DATETIME_FORMAT)
+        except ValueError:
+            continue
+    return raw
+
+
+def normalize_field(field_name: str, value: str) -> Any:
     v = str(value).strip().lower()
     if field_name == "urgency":
         return URGENCY_MAP.get(v, value)
@@ -71,4 +109,28 @@ def normalize_field(field_name: str, value: str) -> str | bool:
         return RISK_MAP.get(v, value)
     if field_name == "known_error":
         return KNOWN_ERROR_MAP.get(v, False)
+    if field_name in DATE_FIELDS:
+        return normalize_date(value)
     return value
+
+
+# Reverse maps for rendering coded values back to human-readable labels in the
+# confirmation summary (e.g. urgency "2" -> "High").
+URGENCY_LABELS = {"1": "Critical", "2": "High", "3": "Medium", "4": "Low"}
+IMPACT_LABELS = {"1": "Enterprise-wide", "2": "Department", "3": "Individual"}
+RISK_LABELS = {"1": "Critical", "2": "High", "3": "Moderate", "4": "Low"}
+
+
+def display_value(field_name: str, value: Any) -> str:
+    """Render a stored (possibly coded) field value as human-readable text."""
+    if field_name == "urgency":
+        return URGENCY_LABELS.get(str(value), str(value))
+    if field_name == "impact":
+        return IMPACT_LABELS.get(str(value), str(value))
+    if field_name == "risk":
+        return RISK_LABELS.get(str(value), str(value))
+    if field_name == "type":
+        return str(value).title()
+    if field_name == "known_error":
+        return "Yes" if value is True else "No"
+    return str(value)

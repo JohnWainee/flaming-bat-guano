@@ -47,7 +47,7 @@ shared/
 docker-compose.yml       # qdrant, redis, orchestrator, teams-bot, email-ingestor, ingestion-pipeline, dashboard
 k8s/                     # Deployments, PVCs, CronJob, secrets-template.yaml
 tests/
-  test_conversation.py   # 30 tests: normalization, intent detection, state machine, prompts
+  test_conversation.py   # 48 tests: normalization, dates, display labels, intent, state machine, CHG/PRB flows, prompts
   test_ingestion.py      # 7 tests: chunking, record-to-text
 ```
 
@@ -62,8 +62,8 @@ tests/
 ## Phases remaining
 
 ### Phase 2 — Email hardening + CHG/PRB intake (2–3 weeks)
+- ✅ **CHG/PRB intake hardened** — `start_date`/`end_date` normalized to SNOW `YYYY-MM-DD HH:MM:SS` (`normalize_date`); confirmation summary renders coded fields (urgency/impact/risk/type/known_error) as human-readable labels via `display_value`; dedicated change/problem flow tests added (suite now **55 tests**)
 - EWS support option in email ingestor (currently IMAP only; `exchangelib` is in requirements)
-- Extend conversation flow for `change_request` and `problem` required fields (already in `field_schemas.py`)
 - Teams Adaptive Cards for the CONFIRM step (rich structured card with Edit/Confirm buttons)
 - Cards directory: `services/teams_bot/cards/` (empty)
 

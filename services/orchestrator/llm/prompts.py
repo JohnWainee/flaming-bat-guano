@@ -60,10 +60,16 @@ def field_question(field_name: str, ticket_type: TicketType) -> str:
 
 
 def format_confirmation(ticket_type: TicketType, fields: dict) -> str:
+    # Lazy import to avoid a circular dependency (field_schemas imports models only).
+    from services.orchestrator.conversation.field_schemas import display_value
+
     lines = []
     for k, v in fields.items():
         label = FIELD_LABELS.get(k, k.replace("_", " ").title())
-        lines.append(f"**{label}:** {v}")
+        # Drop the inline scale hint (e.g. "urgency (1=Critical, ...)") — redundant
+        # now that the value itself is rendered as a readable label.
+        label = label.split(" (")[0]
+        lines.append(f"**{label}:** {display_value(k, v)}")
     return CONFIRM_TEMPLATE.format(
         ticket_type=ticket_type.value.title(),
         fields_summary="\n".join(lines),

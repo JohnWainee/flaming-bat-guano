@@ -5,6 +5,8 @@ import pytest
 
 from services.orchestrator.conversation.field_schemas import (
     REQUIRED_FIELDS,
+    display_value,
+    normalize_date,
     normalize_field,
 )
 from services.orchestrator.conversation.state_machine import _user_confirmed, _user_cancelled, _apply_extracted
@@ -45,6 +47,55 @@ class TestFieldNormalization:
 
     def test_passthrough(self):
         assert normalize_field("short_description", "My laptop is broken") == "My laptop is broken"
+
+
+class TestDateNormalization:
+    def test_iso_date_gets_time_component(self):
+        assert normalize_date("2026-07-01") == "2026-07-01 00:00:00"
+
+    def test_iso_datetime_passthrough(self):
+        assert normalize_date("2026-07-01 14:30:00") == "2026-07-01 14:30:00"
+
+    def test_iso_datetime_without_seconds(self):
+        assert normalize_date("2026-07-01 14:30") == "2026-07-01 14:30:00"
+
+    def test_us_slash_format(self):
+        assert normalize_date("07/01/2026") == "2026-07-01 00:00:00"
+
+    def test_month_name_format(self):
+        assert normalize_date("July 1, 2026") == "2026-07-01 00:00:00"
+
+    def test_unparseable_passes_through(self):
+        # We never silently drop the user's intent.
+        assert normalize_date("next Monday") == "next Monday"
+
+    def test_normalize_field_routes_date_fields(self):
+        assert normalize_field("start_date", "2026-07-01") == "2026-07-01 00:00:00"
+        assert normalize_field("end_date", "2026-07-02") == "2026-07-02 00:00:00"
+
+
+class TestDisplayValue:
+    def test_urgency_label(self):
+        assert display_value("urgency", "2") == "High"
+
+    def test_impact_label(self):
+        assert display_value("impact", "1") == "Enterprise-wide"
+
+    def test_risk_label(self):
+        assert display_value("risk", "3") == "Moderate"
+
+    def test_known_error_bool(self):
+        assert display_value("known_error", True) == "Yes"
+        assert display_value("known_error", False) == "No"
+
+    def test_change_type_titlecased(self):
+        assert display_value("type", "emergency") == "Emergency"
+
+    def test_plain_passthrough(self):
+        assert display_value("short_description", "VPN down") == "VPN down"
+
+    def test_unknown_code_passthrough(self):
+        assert display_value("urgency", "9") == "9"
 
 
 class TestUserIntent:
@@ -104,6 +155,60 @@ class TestApplyExtracted:
         assert state.collected_fields["urgency"] == "4"
 
 
+class TestChangeAndProblemIntake:
+    def test_change_collects_all_required_fields(self):
+        state = _make_state(TicketType.CHANGE)
+        extracted = {
+            "short_description": "Upgrade DB cluster",
+            "description": "Apply 14.2 patch to prod Postgres",
+            "type": "normal",
+            "risk": "moderate",
+            "impact": "department",
+            "implementation_plan": "Rolling restart",
+            "backout_plan": "Restore snapshot",
+            "test_plan": "Smoke tests",
+            "start_date": "2026-07-01",
+            "end_date": "2026-07-02 02:00",
+        }
+        _apply_extracted(state, extracted)
+        assert state.missing_fields == []
+        assert state.collected_fields["risk"] == "3"  # normalized
+        assert state.collected_fields["impact"] == "2"
+        assert state.collected_fields["start_date"] == "2026-07-01 00:00:00"
+        assert state.collected_fields["end_date"] == "2026-07-02 02:00:00"
+
+    def test_problem_collects_all_required_fields(self):
+        state = _make_state(TicketType.PROBLEM)
+        extracted = {
+            "short_description": "Recurring VPN drops",
+            "description": "VPN disconnects every hour for remote users",
+            "impact": "department",
+            "urgency": "high",
+            "known_error": "yes",
+        }
+        _apply_extracted(state, extracted)
+        assert state.missing_fields == []
+        assert state.collected_fields["known_error"] is True
+        assert state.collected_fields["urgency"] == "2"
+
+    def test_change_confirmation_is_human_readable(self):
+        state = _make_state(TicketType.CHANGE)
+        _apply_extracted(state, {"risk": "high", "type": "emergency", "impact": "enterprise-wide"})
+        summary = format_confirmation(TicketType.CHANGE, state.collected_fields)
+        assert "High" in summary
+        assert "Emergency" in summary
+        assert "Enterprise-wide" in summary
+        assert "Change" in summary
+
+    def test_problem_confirmation_renders_known_error_as_yes(self):
+        summary = format_confirmation(
+            TicketType.PROBLEM,
+            {"short_description": "Recurring outage", "known_error": True},
+        )
+        assert "Yes" in summary
+        assert "True" not in summary
+
+
 class TestPrompts:
     def test_format_confirmation(self):
         result = format_confirmation(
@@ -112,6 +217,8 @@ class TestPrompts:
         )
         assert "VPN issue" in result
         assert "Incident" in result
+        # Coded value rendered as a readable label, not the raw code.
+        assert "High" in result
 
     def test_field_question(self):
         q = field_question("urgency", TicketType.INCIDENT)
