@@ -58,26 +58,31 @@ def _submit_to_orchestrator_sync(from_addr: str, subject: str, body: str, messag
         return resp.json().get("ticket_number")
 
 
-def _send_reply(conn: imaplib.IMAP4_SSL, to_addr: str, subject: str, ticket_number: Optional[str]) -> None:
-    import smtplib
-    from email.mime.text import MIMEText
-
+def _build_reply_body(ticket_number: Optional[str]) -> str:
     if ticket_number:
-        reply_body = (
+        return (
             f"Thank you for contacting IT Support.\n\n"
             f"Your ticket has been created: {ticket_number}\n\n"
             f"You will receive updates as your ticket is worked on.\n\n"
             f"IT Service Desk"
         )
-    else:
-        reply_body = (
-            "Thank you for contacting IT Support.\n\n"
-            "We were unable to automatically create a ticket from your email. "
-            "Please provide more details about your issue and we will follow up shortly.\n\n"
-            "IT Service Desk"
-        )
+    return (
+        "Thank you for contacting IT Support.\n\n"
+        "We were unable to automatically create a ticket from your email. "
+        "Please provide more details about your issue and we will follow up shortly.\n\n"
+        "IT Service Desk"
+    )
 
-    msg = MIMEText(reply_body)
+
+# ---------------------------------------------------------------------------
+# IMAP implementation
+# ---------------------------------------------------------------------------
+
+def _imap_send_reply(to_addr: str, subject: str, ticket_number: Optional[str]) -> None:
+    import smtplib
+    from email.mime.text import MIMEText
+
+    msg = MIMEText(_build_reply_body(ticket_number))
     msg["Subject"] = f"Re: {subject}" if not subject.startswith("Re:") else subject
     msg["From"] = settings.email_username
     msg["To"] = to_addr
@@ -87,7 +92,7 @@ def _send_reply(conn: imaplib.IMAP4_SSL, to_addr: str, subject: str, ticket_numb
             smtp.login(settings.email_username, settings.email_password)
             smtp.send_message(msg)
     except Exception as exc:
-        logger.warning("Failed to send reply to %s: %s", to_addr, exc)
+        logger.warning("Failed to send IMAP reply to %s: %s", to_addr, exc)
 
 
 def _process_imap() -> None:
@@ -119,9 +124,8 @@ def _process_imap() -> None:
             body = _extract_body(msg)
 
             ticket_number = _submit_to_orchestrator_sync(from_addr, subject, body, message_id)
-            _send_reply(conn, from_addr, subject, ticket_number)
+            _imap_send_reply(from_addr, subject, ticket_number)
 
-            # Move to processed folder
             conn.copy(num, settings.email_processed_folder)
             conn.store(num, "+FLAGS", "\\Deleted")
             logger.info("Processed email from %s — ticket: %s", from_addr, ticket_number)
@@ -132,13 +136,90 @@ def _process_imap() -> None:
     conn.logout()
 
 
+# ---------------------------------------------------------------------------
+# EWS (Exchange Web Services) implementation
+# ---------------------------------------------------------------------------
+
+def _process_ews() -> None:
+    try:
+        from exchangelib import (
+            Account,
+            Credentials,
+            DELEGATE,
+            Mailbox,
+        )
+        from exchangelib.items import Message as EwsMessage
+    except ImportError as exc:
+        raise RuntimeError(
+            "exchangelib is required for EWS mode. Install it with: pip install exchangelib"
+        ) from exc
+
+    logger.info("Connecting to Exchange via EWS for %s", settings.email_username)
+    credentials = Credentials(
+        username=settings.email_username,
+        password=settings.email_password,
+    )
+    account = Account(
+        primary_smtp_address=settings.email_username,
+        credentials=credentials,
+        autodiscover=True,
+        access_type=DELEGATE,
+    )
+
+    unread_items = list(account.inbox.filter(is_read=False).only(
+        "subject", "sender", "text_body", "message_id",
+    ))
+    logger.info("Processing %d unread EWS message(s)", len(unread_items))
+
+    processed_folder = None
+    try:
+        processed_folder = account.root / "Top of Information Store" / settings.email_processed_folder
+    except Exception:
+        logger.warning("Could not locate processed folder '%s', items will be marked read only", settings.email_processed_folder)
+
+    for item in unread_items:
+        try:
+            from_addr = item.sender.email_address if item.sender else ""
+            subject = item.subject or "(no subject)"
+            body = (item.text_body or "").strip()
+            message_id = item.message_id or str(item.id)
+
+            ticket_number = _submit_to_orchestrator_sync(from_addr, subject, body, message_id)
+
+            # Reply via EWS
+            try:
+                reply_msg = EwsMessage(
+                    account=account,
+                    subject=f"Re: {subject}" if not subject.startswith("Re:") else subject,
+                    body=_build_reply_body(ticket_number),
+                    to_recipients=[Mailbox(email_address=from_addr)],
+                )
+                reply_msg.send()
+            except Exception as exc:
+                logger.warning("Failed to send EWS reply to %s: %s", from_addr, exc)
+
+            item.is_read = True
+            item.save()
+            if processed_folder:
+                item.move(processed_folder)
+
+            logger.info("Processed EWS email from %s — ticket: %s", from_addr, ticket_number)
+        except Exception as exc:
+            logger.error("Error processing EWS item %s: %s", getattr(item, "id", "?"), exc, exc_info=True)
+
+
+# ---------------------------------------------------------------------------
+# Main poll loop
+# ---------------------------------------------------------------------------
+
 async def poll_forever() -> None:
+    processor = _process_ews if settings.email_type == "ews" else _process_imap
     loop = asyncio.get_event_loop()
     while True:
         try:
-            await loop.run_in_executor(None, _process_imap)
+            await loop.run_in_executor(None, processor)
         except Exception as exc:
-            logger.error("IMAP poll error: %s", exc, exc_info=True)
+            logger.error("Email poll error (%s): %s", settings.email_type, exc, exc_info=True)
         await asyncio.sleep(settings.email_poll_interval_seconds)
 
 
