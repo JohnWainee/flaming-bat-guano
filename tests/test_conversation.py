@@ -45,6 +45,10 @@ class TestFieldNormalization:
         assert normalize_field("known_error", "yes") is True
         assert normalize_field("known_error", "no") is False
 
+    def test_known_error_unknown_passes_through(self):
+        # Unrecognized input is not silently coerced to False — intent is preserved.
+        assert normalize_field("known_error", "maybe") == "maybe"
+
     def test_passthrough(self):
         assert normalize_field("short_description", "My laptop is broken") == "My laptop is broken"
 
@@ -87,6 +91,10 @@ class TestDisplayValue:
     def test_known_error_bool(self):
         assert display_value("known_error", True) == "Yes"
         assert display_value("known_error", False) == "No"
+
+    def test_known_error_non_bool_passes_through(self):
+        # A non-bool value (e.g. un-normalized string) is surfaced, not shown as "No".
+        assert display_value("known_error", "maybe") == "maybe"
 
     def test_change_type_titlecased(self):
         assert display_value("type", "emergency") == "Emergency"

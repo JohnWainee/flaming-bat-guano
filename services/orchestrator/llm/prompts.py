@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from shared.models import TicketType
 
+from services.orchestrator.conversation.field_schemas import display_value
+
 SYSTEM_PROMPT = """You are a helpful IT service desk assistant that guides users through creating ServiceNow tickets.
 
 Your job is to:
@@ -60,9 +62,6 @@ def field_question(field_name: str, ticket_type: TicketType) -> str:
 
 
 def format_confirmation(ticket_type: TicketType, fields: dict) -> str:
-    # Lazy import to avoid a circular dependency (field_schemas imports models only).
-    from services.orchestrator.conversation.field_schemas import display_value
-
     lines = []
     for k, v in fields.items():
         label = FIELD_LABELS.get(k, k.replace("_", " ").title())

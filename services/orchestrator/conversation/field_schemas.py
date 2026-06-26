@@ -108,7 +108,7 @@ def normalize_field(field_name: str, value: str) -> Any:
     if field_name == "risk":
         return RISK_MAP.get(v, value)
     if field_name == "known_error":
-        return KNOWN_ERROR_MAP.get(v, False)
+        return KNOWN_ERROR_MAP.get(v, value)
     if field_name in DATE_FIELDS:
         return normalize_date(value)
     return value
@@ -132,5 +132,11 @@ def display_value(field_name: str, value: Any) -> str:
     if field_name == "type":
         return str(value).title()
     if field_name == "known_error":
-        return "Yes" if value is True else "No"
+        if value is True:
+            return "Yes"
+        if value is False:
+            return "No"
+        # Unrecognized value (e.g. an un-normalized string) — surface it as-is
+        # rather than silently asserting "No".
+        return str(value)
     return str(value)
