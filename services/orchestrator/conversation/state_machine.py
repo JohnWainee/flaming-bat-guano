@@ -192,6 +192,8 @@ async def process_message(state: ConversationState, request: ChatRequest) -> tup
         reply=reply,
         stage=state.stage,
         ticket_number=ticket_number,
+        ticket_type=state.ticket_type if state.stage == ConversationStage.CONFIRM else None,
+        collected_fields=dict(state.collected_fields) if state.stage == ConversationStage.CONFIRM else None,
     )
 
 

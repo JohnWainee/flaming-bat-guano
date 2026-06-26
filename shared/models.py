@@ -50,6 +50,8 @@ class ChatResponse(BaseModel):
     reply: str
     stage: ConversationStage
     ticket_number: Optional[str] = None
+    ticket_type: Optional[TicketType] = None
+    collected_fields: Optional[Dict[str, Any]] = None
 
 
 class EmailRequest(BaseModel):
