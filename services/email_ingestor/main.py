@@ -12,6 +12,12 @@ import httpx
 
 from shared.config import settings
 
+from services.email_ingestor.processing import (
+    build_reply_body,
+    first_text_block,
+    reply_subject,
+)
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -40,7 +46,7 @@ def _extract_body(msg: email.message.Message) -> str:
         payload = msg.get_payload(decode=True)
         if isinstance(payload, bytes):
             body = payload.decode(msg.get_content_charset() or "utf-8", errors="replace")
-    return body.strip()
+    return first_text_block(body)
 
 
 def _submit_to_orchestrator_sync(from_addr: str, subject: str, body: str, message_id: str) -> Optional[str]:
@@ -58,27 +64,17 @@ def _submit_to_orchestrator_sync(from_addr: str, subject: str, body: str, messag
         return resp.json().get("ticket_number")
 
 
-def _send_reply(conn: imaplib.IMAP4_SSL, to_addr: str, subject: str, ticket_number: Optional[str]) -> None:
+# --------------------------------------------------------------------------- #
+# IMAP transport                                                              #
+# --------------------------------------------------------------------------- #
+
+
+def _send_reply_smtp(to_addr: str, subject: str, ticket_number: Optional[str]) -> None:
     import smtplib
     from email.mime.text import MIMEText
 
-    if ticket_number:
-        reply_body = (
-            f"Thank you for contacting IT Support.\n\n"
-            f"Your ticket has been created: {ticket_number}\n\n"
-            f"You will receive updates as your ticket is worked on.\n\n"
-            f"IT Service Desk"
-        )
-    else:
-        reply_body = (
-            "Thank you for contacting IT Support.\n\n"
-            "We were unable to automatically create a ticket from your email. "
-            "Please provide more details about your issue and we will follow up shortly.\n\n"
-            "IT Service Desk"
-        )
-
-    msg = MIMEText(reply_body)
-    msg["Subject"] = f"Re: {subject}" if not subject.startswith("Re:") else subject
+    msg = MIMEText(build_reply_body(ticket_number))
+    msg["Subject"] = reply_subject(subject)
     msg["From"] = settings.email_username
     msg["To"] = to_addr
 
@@ -119,7 +115,7 @@ def _process_imap() -> None:
             body = _extract_body(msg)
 
             ticket_number = _submit_to_orchestrator_sync(from_addr, subject, body, message_id)
-            _send_reply(conn, from_addr, subject, ticket_number)
+            _send_reply_smtp(from_addr, subject, ticket_number)
 
             # Move to processed folder
             conn.copy(num, settings.email_processed_folder)
@@ -132,13 +128,109 @@ def _process_imap() -> None:
     conn.logout()
 
 
+# --------------------------------------------------------------------------- #
+# Exchange Web Services (EWS) transport                                       #
+# --------------------------------------------------------------------------- #
+
+
+def _ews_account():
+    """Build an authenticated exchangelib Account (Autodiscover or explicit host).
+
+    exchangelib is imported lazily so the module can be imported (and the IMAP
+    path used) in environments where exchangelib isn't installed.
+    """
+    from exchangelib import (  # type: ignore
+        DELEGATE,
+        Account,
+        Configuration,
+        Credentials,
+    )
+
+    smtp_address = settings.ews_primary_smtp_address or settings.email_username
+    credentials = Credentials(username=settings.email_username, password=settings.email_password)
+
+    if settings.ews_server:
+        config = Configuration(server=settings.ews_server, credentials=credentials)
+        return Account(
+            primary_smtp_address=smtp_address,
+            config=config,
+            autodiscover=False,
+            access_type=DELEGATE,
+        )
+    return Account(
+        primary_smtp_address=smtp_address,
+        credentials=credentials,
+        autodiscover=True,
+        access_type=DELEGATE,
+    )
+
+
+def _process_ews() -> None:
+    logger.info("Connecting to Exchange via EWS for %s", settings.email_username)
+    account = _ews_account()
+
+    inbox = account.inbox
+    unread = list(inbox.filter(is_read=False))
+    if not unread:
+        logger.info("No unread messages")
+        return
+
+    logger.info("Processing %d unread message(s)", len(unread))
+
+    # Resolve/ensure the processed folder under the inbox.
+    processed = None
+    for child in inbox.children:
+        if child.name == settings.email_processed_folder:
+            processed = child
+            break
+
+    for item in unread:
+        try:
+            from_addr = item.sender.email_address if item.sender else ""
+            subject = item.subject or "(no subject)"
+            message_id = item.message_id or str(item.id)
+            body = first_text_block(item.text_body or "")
+
+            ticket_number = _submit_to_orchestrator_sync(from_addr, subject, body, message_id)
+            _send_reply_ews(item, subject, ticket_number)
+
+            item.is_read = True
+            item.save(update_fields=["is_read"])
+            if processed is not None:
+                item.move(processed)
+            logger.info("Processed email from %s — ticket: %s", from_addr, ticket_number)
+        except Exception as exc:
+            logger.error("Error processing EWS message: %s", exc, exc_info=True)
+
+
+def _send_reply_ews(item, subject: str, ticket_number: Optional[str]) -> None:
+    try:
+        item.reply(subject=reply_subject(subject), body=build_reply_body(ticket_number))
+    except Exception as exc:
+        sender = item.sender.email_address if getattr(item, "sender", None) else "unknown"
+        logger.warning("Failed to send EWS reply to %s: %s", sender, exc)
+
+
+# --------------------------------------------------------------------------- #
+# Dispatch + poll loop                                                        #
+# --------------------------------------------------------------------------- #
+
+
+def _process_once() -> None:
+    if settings.email_type == "ews":
+        _process_ews()
+    else:
+        _process_imap()
+
+
 async def poll_forever() -> None:
     loop = asyncio.get_event_loop()
+    logger.info("Email ingestor starting in %s mode", settings.email_type)
     while True:
         try:
-            await loop.run_in_executor(None, _process_imap)
+            await loop.run_in_executor(None, _process_once)
         except Exception as exc:
-            logger.error("IMAP poll error: %s", exc, exc_info=True)
+            logger.error("%s poll error: %s", settings.email_type.upper(), exc, exc_info=True)
         await asyncio.sleep(settings.email_poll_interval_seconds)
 
 

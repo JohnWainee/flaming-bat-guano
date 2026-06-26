@@ -38,7 +38,9 @@ services/
     state_store.py       # Redis-backed ConversationState persistence (TTL: 1hr)
     main.py              # FastAPI app + lifespan (ensures Qdrant collections on startup)
   teams_bot/main.py      # aiohttp + Bot Framework adapter → POST /chat
-  email_ingestor/main.py # IMAP polling, parseaddr(), sync HTTP, run_in_executor
+  email_ingestor/
+    main.py              # IMAP + EWS transports, dispatch on EMAIL_TYPE, run_in_executor
+    processing.py        # Pure helpers (reply body/subject, body cleanup) — no transport deps
   ingestion_pipeline/main.py  # SNOW→chunk→embed→Qdrant with incremental cursor in /data/
   dashboard/app.py       # Streamlit: Semantic Search, Similar Tickets, Trend Analysis
 shared/
@@ -47,8 +49,9 @@ shared/
 docker-compose.yml       # qdrant, redis, orchestrator, teams-bot, email-ingestor, ingestion-pipeline, dashboard
 k8s/                     # Deployments, PVCs, CronJob, secrets-template.yaml
 tests/
-  test_conversation.py   # 48 tests: normalization, dates, display labels, intent, state machine, CHG/PRB flows, prompts
+  test_conversation.py   # 50 tests: normalization, dates, display labels, intent, state machine, CHG/PRB flows, prompts
   test_ingestion.py      # 7 tests: chunking, record-to-text
+  test_email_ingestor.py # 11 tests: reply body/subject, body cleanup (transport-agnostic)
 ```
 
 ### Bugs fixed before merge (Copilot review)
@@ -63,7 +66,7 @@ tests/
 
 ### Phase 2 — Email hardening + CHG/PRB intake (2–3 weeks)
 - ✅ **CHG/PRB intake hardened** — `start_date`/`end_date` normalized to SNOW `YYYY-MM-DD HH:MM:SS` (`normalize_date`); confirmation summary renders coded fields (urgency/impact/risk/type/known_error) as human-readable labels via `display_value`; dedicated change/problem flow tests added (suite now **55 tests**)
-- EWS support option in email ingestor (currently IMAP only; `exchangelib` is in requirements)
+- ✅ **EWS support in email ingestor** — `EMAIL_TYPE=imap|ews` dispatch; EWS path uses `exchangelib` (lazy-imported) with Autodiscover or explicit `EWS_SERVER`; reads unread, submits, replies, marks read, moves to processed folder. Shared pure helpers extracted to `processing.py` and unit-tested (suite now **68 tests**)
 - Teams Adaptive Cards for the CONFIRM step (rich structured card with Edit/Confirm buttons)
 - Cards directory: `services/teams_bot/cards/` (empty)
 

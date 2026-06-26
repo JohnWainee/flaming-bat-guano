@@ -44,6 +44,12 @@ class Settings(BaseSettings):
     email_poll_interval_seconds: int = 300
     email_inbox_folder: str = "INBOX"
     email_processed_folder: str = "Processed"
+    # Exchange Web Services (only used when email_type == "ews").
+    # ews_server is the Exchange FQDN (e.g. "mail.contoso.com"); leave empty to
+    # use Autodiscover. ews_primary_smtp_address defaults to email_username.
+    ews_server: Optional[str] = None
+    ews_primary_smtp_address: Optional[str] = None
+    ews_auth_type: str = "NTLM"
 
     # Bot Framework (Azure Bot Service)
     microsoft_app_id: str = ""
