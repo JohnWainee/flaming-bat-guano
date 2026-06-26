@@ -18,10 +18,10 @@ A two-part solution to ServiceNow pain points for an organization with ~500–5k
 | Language | Python 3.12 | Best LLM/ML ecosystem |
 | SNOW auth | Basic auth (default) or OAuth 2.0 | API access only, no admin UI |
 
-## Current state: Phase 1 MERGED ✅
+## Current state: Phase 2 MERGED ✅
 
-**Branch:** `main` (PR #1 merged)  
-**All 37 unit tests passing.**
+**Branch:** `main` (PR #1 + PR #3 merged)  
+**All 59 unit tests passing.**
 
 ### What was built
 
@@ -33,39 +33,31 @@ services/
     snow/client.py       # ServiceNow Table API (create, get, update, iter_all_records)
     vector/client.py     # Qdrant async client (ensure_collections, upsert_chunks_batch, search_similar)
     conversation/
-      state_machine.py   # GREETING→CLASSIFY→COLLECT→CONFIRM→SUBMITTED; all LLM calls lazy-imported
+      state_machine.py   # GREETING→CLASSIFY→COLLECT→CONFIRM→SUBMITTED; populates ticket_type+collected_fields at CONFIRM
       field_schemas.py   # Required fields per ticket type + normalize_field()
     state_store.py       # Redis-backed ConversationState persistence (TTL: 1hr)
     main.py              # FastAPI app + lifespan (ensures Qdrant collections on startup)
-  teams_bot/main.py      # aiohttp + Bot Framework adapter → POST /chat
-  email_ingestor/main.py # IMAP polling, parseaddr(), sync HTTP, run_in_executor
+  teams_bot/
+    main.py              # aiohttp + Bot Framework adapter; sends Adaptive Cards at CONFIRM and SUBMITTED stages
+    cards/
+      confirmation_card.py  # build_confirmation_card() + build_submitted_card() — Adaptive Card v1.4 builders
+  email_ingestor/main.py # IMAP + EWS (exchangelib) polling; email_type config selects at runtime
   ingestion_pipeline/main.py  # SNOW→chunk→embed→Qdrant with incremental cursor in /data/
   dashboard/app.py       # Streamlit: Semantic Search, Similar Tickets, Trend Analysis
 shared/
-  models.py              # Pydantic: TicketType, ConversationState, SearchResult, etc.
+  models.py              # Pydantic: TicketType, ConversationState, ChatResponse (+ ticket_type, collected_fields), etc.
   config.py              # pydantic-settings from .env
 docker-compose.yml       # qdrant, redis, orchestrator, teams-bot, email-ingestor, ingestion-pipeline, dashboard
 k8s/                     # Deployments, PVCs, CronJob, secrets-template.yaml
 tests/
   test_conversation.py   # 30 tests: normalization, intent detection, state machine, prompts
   test_ingestion.py      # 7 tests: chunking, record-to-text
+  test_adaptive_cards.py # 22 tests: card builders, display-value normalization, ChatResponse model
 ```
-
-### Bugs fixed before merge (Copilot review)
-- Teams bot: async no-op handler + async /health handler
-- Orchestrator: reject state when user_id mismatches (group chat isolation)
-- Email ingestor: `parseaddr()` for From header; sync HTTP client; `run_in_executor` for blocking IMAP
-- State machine: word-boundary `_user_cancelled` (was matching "not working"); removed cancel branch in CONFIRM so corrections are in-place
-- Dashboard: removed unused imports
-- docker-compose: added missing `ingestion-pipeline` service
 
 ## Phases remaining
 
-### Phase 2 — Email hardening + CHG/PRB intake (2–3 weeks)
-- EWS support option in email ingestor (currently IMAP only; `exchangelib` is in requirements)
-- Extend conversation flow for `change_request` and `problem` required fields (already in `field_schemas.py`)
-- Teams Adaptive Cards for the CONFIRM step (rich structured card with Edit/Confirm buttons)
-- Cards directory: `services/teams_bot/cards/` (empty)
+### Phase 3 — Historical ingestion + dashboard validation (3–4 weeks)
 
 ### Phase 3 — Historical ingestion + dashboard validation (3–4 weeks)
 - Run ingestion pipeline against real/sandbox SNOW instance
