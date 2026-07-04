@@ -64,6 +64,14 @@ tests/
 
 ## Phases remaining
 
+> **Execution plan:** the remaining phases are broken into Sonnet-executable task
+> files under [`tasks/`](tasks/README.md), each with a **Sonnet builds → Codex
+> red-teams → Sonnet fixes** handoff (see `tasks/README.md` and root `AGENTS.md`).
+> Red-teaming is scoped to LLM security (prompt injection, exfiltration, PII
+> leakage, tool abuse, identity). Task ids: `P2-00/01`, `P3-00..06`, `P4-00..09`.
+> **Note:** Phase 2's CHG/PRB + EWS work below is *parked* on branch
+> `claude/funny-johnson-ktstpu` (PR #2 was closed unmerged); `P2-00` re-lands it.
+
 ### Phase 2 — Email hardening + CHG/PRB intake (2–3 weeks)
 - ✅ **CHG/PRB intake hardened** — `start_date`/`end_date` normalized to SNOW `YYYY-MM-DD HH:MM:SS` (`normalize_date`); confirmation summary renders coded fields (urgency/impact/risk/type/known_error) as human-readable labels via `display_value`; dedicated change/problem flow tests added (suite now **55 tests**)
 - ✅ **EWS support in email ingestor** — `EMAIL_TYPE=imap|ews` dispatch; EWS path uses `exchangelib` (lazy-imported) with Autodiscover or explicit `EWS_SERVER`; reads unread, submits, replies, marks read, moves to processed folder. Shared pure helpers extracted to `processing.py` and unit-tested (suite now **68 tests**)
