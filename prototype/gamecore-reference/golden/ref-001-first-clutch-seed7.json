@@ -1,0 +1,124 @@
+{
+  "actions": [
+    {
+      "dx": 40417,
+      "dy": -51523,
+      "type": "shot"
+    },
+    {
+      "dx": 161296,
+      "dy": -38079,
+      "type": "shot"
+    },
+    {
+      "dx": -130689,
+      "dy": -80374,
+      "type": "shot"
+    },
+    {
+      "dx": 108796,
+      "dy": -80841,
+      "type": "shot"
+    },
+    {
+      "dx": -45417,
+      "dy": -76912,
+      "type": "shot"
+    },
+    {
+      "dx": 22786,
+      "dy": -78647,
+      "type": "shot"
+    },
+    {
+      "dx": 45485,
+      "dy": -39196,
+      "type": "shot"
+    },
+    {
+      "dx": 109156,
+      "dy": -72214,
+      "type": "shot"
+    },
+    {
+      "dx": -55478,
+      "dy": -63405,
+      "type": "shot"
+    },
+    {
+      "dx": -81818,
+      "dy": -41549,
+      "type": "shot"
+    },
+    {
+      "dx": 114416,
+      "dy": -51550,
+      "type": "shot"
+    },
+    {
+      "dx": -160292,
+      "dy": -40156,
+      "type": "shot"
+    },
+    {
+      "dx": 186023,
+      "dy": -92878,
+      "type": "shot"
+    },
+    {
+      "dx": -39804,
+      "dy": -35004,
+      "type": "shot"
+    },
+    {
+      "dx": 127897,
+      "dy": -66074,
+      "type": "shot"
+    },
+    {
+      "dx": 42138,
+      "dy": -80710,
+      "type": "shot"
+    },
+    {
+      "dx": -6931,
+      "dy": -82626,
+      "type": "shot"
+    },
+    {
+      "dx": 84345,
+      "dy": -76128,
+      "type": "shot"
+    },
+    {
+      "dx": 827,
+      "dy": -94463,
+      "type": "shot"
+    },
+    {
+      "dx": -27333,
+      "dy": -43842,
+      "type": "shot"
+    },
+    {
+      "dx": 140224,
+      "dy": -42353,
+      "type": "shot"
+    },
+    {
+      "dx": 190822,
+      "dy": -41792,
+      "type": "shot"
+    }
+  ],
+  "expected": {
+    "finalHash": "398fc4d6ad291523958d20e8452224c476c0083cb64325a470af1aa3ff019daa",
+    "score": 60,
+    "shots": 22,
+    "status": "lost"
+  },
+  "levelId": "ref-001-first-clutch",
+  "rulesetVersion": "0.1.0",
+  "schemaVersion": 1,
+  "seed": 7
+}

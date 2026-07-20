@@ -1,0 +1,22 @@
+{
+  "id": "ref-001-first-clutch",
+  "environment": "fern-canyon",
+  "board": {
+    "width": 8,
+    "parity": 0,
+    "rows": [
+      "RRGGBBYY",
+      "RGGBBYY",
+      "..GB...."
+    ]
+  },
+  "colors": ["R", "G", "B", "Y"],
+  "danger": {
+    "dangerRow": 10,
+    "shotsPerInsertion": 0
+  },
+  "objectives": [{"type": "clearAllEggs"}],
+  "limits": {"shots": 0},
+  "eggSequence": {"policy": "seededUniform"},
+  "seedPolicy": {"mode": "fixed", "seed": 12345}
+}

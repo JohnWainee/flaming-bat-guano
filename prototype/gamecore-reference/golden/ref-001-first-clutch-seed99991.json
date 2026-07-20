@@ -1,0 +1,134 @@
+{
+  "actions": [
+    {
+      "dx": -8514,
+      "dy": -35719,
+      "type": "shot"
+    },
+    {
+      "dx": -152135,
+      "dy": -60924,
+      "type": "shot"
+    },
+    {
+      "dx": -193639,
+      "dy": -90823,
+      "type": "shot"
+    },
+    {
+      "dx": -17246,
+      "dy": -61298,
+      "type": "shot"
+    },
+    {
+      "dx": 23919,
+      "dy": -42247,
+      "type": "shot"
+    },
+    {
+      "dx": -51629,
+      "dy": -48178,
+      "type": "shot"
+    },
+    {
+      "dx": 148331,
+      "dy": -56688,
+      "type": "shot"
+    },
+    {
+      "dx": 134393,
+      "dy": -95629,
+      "type": "shot"
+    },
+    {
+      "dx": 188619,
+      "dy": -87843,
+      "type": "shot"
+    },
+    {
+      "dx": -107912,
+      "dy": -98019,
+      "type": "shot"
+    },
+    {
+      "dx": -84169,
+      "dy": -33646,
+      "type": "shot"
+    },
+    {
+      "dx": 89743,
+      "dy": -41268,
+      "type": "shot"
+    },
+    {
+      "dx": 164582,
+      "dy": -60658,
+      "type": "shot"
+    },
+    {
+      "dx": 96379,
+      "dy": -75871,
+      "type": "shot"
+    },
+    {
+      "dx": -116484,
+      "dy": -43283,
+      "type": "shot"
+    },
+    {
+      "dx": -184876,
+      "dy": -37837,
+      "type": "shot"
+    },
+    {
+      "dx": -177567,
+      "dy": -57078,
+      "type": "shot"
+    },
+    {
+      "dx": 120670,
+      "dy": -95464,
+      "type": "shot"
+    },
+    {
+      "dx": -76980,
+      "dy": -42155,
+      "type": "shot"
+    },
+    {
+      "dx": -798,
+      "dy": -65060,
+      "type": "shot"
+    },
+    {
+      "dx": 27251,
+      "dy": -43089,
+      "type": "shot"
+    },
+    {
+      "dx": -21371,
+      "dy": -58477,
+      "type": "shot"
+    },
+    {
+      "dx": -115519,
+      "dy": -89784,
+      "type": "shot"
+    },
+    {
+      "dx": -24371,
+      "dy": -59287,
+      "type": "shot"
+    }
+  ],
+  "expected": {
+    "finalHash": "d0261e250e68f2b4d2e9e482693b0763efacca4f9a9dc2ea55ff80411372721f",
+    "score": 210,
+    "shots": 24,
+    "status": "lost"
+  },
+  "levelId": "ref-001-first-clutch",
+  "rulesetVersion": "0.1.0",
+  "schemaVersion": 1,
+  "seed": 99991
+}

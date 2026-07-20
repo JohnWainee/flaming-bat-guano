@@ -1,0 +1,79 @@
+{
+  "actions": [
+    {
+      "dx": -168920,
+      "dy": -32943,
+      "type": "shot"
+    },
+    {
+      "dx": -11502,
+      "dy": -65224,
+      "type": "shot"
+    },
+    {
+      "dx": -110544,
+      "dy": -76807,
+      "type": "shot"
+    },
+    {
+      "dx": -99385,
+      "dy": -33954,
+      "type": "shot"
+    },
+    {
+      "dx": -22030,
+      "dy": -61321,
+      "type": "shot"
+    },
+    {
+      "dx": 77731,
+      "dy": -59394,
+      "type": "shot"
+    },
+    {
+      "dx": -62120,
+      "dy": -49608,
+      "type": "shot"
+    },
+    {
+      "dx": 9803,
+      "dy": -54151,
+      "type": "shot"
+    },
+    {
+      "dx": -145714,
+      "dy": -56001,
+      "type": "shot"
+    },
+    {
+      "dx": -152997,
+      "dy": -83300,
+      "type": "shot"
+    },
+    {
+      "dx": 46110,
+      "dy": -56951,
+      "type": "shot"
+    },
+    {
+      "dx": 113611,
+      "dy": -83778,
+      "type": "shot"
+    },
+    {
+      "dx": 174878,
+      "dy": -71412,
+      "type": "shot"
+    }
+  ],
+  "expected": {
+    "finalHash": "3999d3aa07b37c01e682129e0e639ca1d73eeb8654d60b84bf52724f60a1680c",
+    "score": 30,
+    "shots": 13,
+    "status": "lost"
+  },
+  "levelId": "ref-002-rising-nest",
+  "rulesetVersion": "0.1.0",
+  "schemaVersion": 1,
+  "seed": 1
+}
