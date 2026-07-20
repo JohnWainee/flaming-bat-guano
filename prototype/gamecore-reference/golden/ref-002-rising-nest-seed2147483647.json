@@ -1,0 +1,104 @@
+{
+  "actions": [
+    {
+      "dx": 186017,
+      "dy": -88407,
+      "type": "shot"
+    },
+    {
+      "dx": 63556,
+      "dy": -44271,
+      "type": "shot"
+    },
+    {
+      "dx": 135370,
+      "dy": -37189,
+      "type": "shot"
+    },
+    {
+      "dx": 103670,
+      "dy": -84807,
+      "type": "shot"
+    },
+    {
+      "dx": -108858,
+      "dy": -68470,
+      "type": "shot"
+    },
+    {
+      "dx": -68240,
+      "dy": -54537,
+      "type": "shot"
+    },
+    {
+      "dx": 184954,
+      "dy": -48930,
+      "type": "shot"
+    },
+    {
+      "dx": -177278,
+      "dy": -62605,
+      "type": "shot"
+    },
+    {
+      "dx": -80594,
+      "dy": -69267,
+      "type": "shot"
+    },
+    {
+      "dx": -53355,
+      "dy": -87086,
+      "type": "shot"
+    },
+    {
+      "dx": 21662,
+      "dy": -89100,
+      "type": "shot"
+    },
+    {
+      "dx": 70925,
+      "dy": -42010,
+      "type": "shot"
+    },
+    {
+      "dx": -8739,
+      "dy": -81970,
+      "type": "shot"
+    },
+    {
+      "dx": -3109,
+      "dy": -77181,
+      "type": "shot"
+    },
+    {
+      "dx": 150673,
+      "dy": -88411,
+      "type": "shot"
+    },
+    {
+      "dx": 135537,
+      "dy": -60406,
+      "type": "shot"
+    },
+    {
+      "dx": 39944,
+      "dy": -36432,
+      "type": "shot"
+    },
+    {
+      "dx": 172496,
+      "dy": -52552,
+      "type": "shot"
+    }
+  ],
+  "expected": {
+    "finalHash": "bcfec25605d480308d3e9b95ed7e8a26fb134dea507bc816b0f2a346d2aeada7",
+    "score": 390,
+    "shots": 18,
+    "status": "lost"
+  },
+  "levelId": "ref-002-rising-nest",
+  "rulesetVersion": "0.1.0",
+  "schemaVersion": 1,
+  "seed": 2147483647
+}

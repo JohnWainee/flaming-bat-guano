@@ -1,0 +1,69 @@
+{
+  "actions": [
+    {
+      "dx": 40417,
+      "dy": -51523,
+      "type": "shot"
+    },
+    {
+      "dx": 161296,
+      "dy": -38079,
+      "type": "shot"
+    },
+    {
+      "dx": -130689,
+      "dy": -80374,
+      "type": "shot"
+    },
+    {
+      "dx": 108796,
+      "dy": -80841,
+      "type": "shot"
+    },
+    {
+      "dx": -45417,
+      "dy": -76912,
+      "type": "shot"
+    },
+    {
+      "dx": 22786,
+      "dy": -78647,
+      "type": "shot"
+    },
+    {
+      "dx": 45485,
+      "dy": -39196,
+      "type": "shot"
+    },
+    {
+      "dx": 109156,
+      "dy": -72214,
+      "type": "shot"
+    },
+    {
+      "dx": -55478,
+      "dy": -63405,
+      "type": "shot"
+    },
+    {
+      "dx": -81818,
+      "dy": -41549,
+      "type": "shot"
+    },
+    {
+      "dx": 114416,
+      "dy": -51550,
+      "type": "shot"
+    }
+  ],
+  "expected": {
+    "finalHash": "6514897e57eba43405a1fd29f3b44db7a4cf8c5cdc22be724e95a37232d61b6a",
+    "score": 150,
+    "shots": 11,
+    "status": "lost"
+  },
+  "levelId": "ref-002-rising-nest",
+  "rulesetVersion": "0.1.0",
+  "schemaVersion": 1,
+  "seed": 7
+}

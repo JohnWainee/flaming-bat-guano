@@ -1,0 +1,23 @@
+{
+  "id": "ref-002-rising-nest",
+  "environment": "fern-canyon",
+  "board": {
+    "width": 8,
+    "parity": 0,
+    "rows": [
+      "RGBYRGBY",
+      "GBYRGBY",
+      "BYRGBYRG",
+      "YRGBYRG"
+    ]
+  },
+  "colors": ["R", "G", "B", "Y", "P"],
+  "danger": {
+    "dangerRow": 9,
+    "shotsPerInsertion": 6
+  },
+  "objectives": [{"type": "surviveInsertions", "count": 5}],
+  "limits": {"shots": 0},
+  "eggSequence": {"policy": "seededUniform"},
+  "seedPolicy": {"mode": "daily"}
+}
